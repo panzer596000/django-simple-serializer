@@ -5,10 +5,12 @@ import sys
 PY2 = True
 if sys.version < '3':
     from future.builtins import str, int
+
     PY2 = False
 
 import datetime
 import json
+import uuid
 
 from decimal import Decimal
 
@@ -53,6 +55,7 @@ class Serializer(object):
         self._dict_check = kwargs.get('dict_check', False)
 
     def check_attr(self, attr):
+        """检查该属性是否要被序列化"""
         if self.exclude_attr and attr in self.exclude_attr:
             return False
         if self.include_attr and attr not in self.include_attr:
@@ -60,6 +63,7 @@ class Serializer(object):
         return True
 
     def data_inspect(self, data, extra=None):
+        """数据检查/校验/查看/审视"""
         if isinstance(data, (QuerySet, Page, list)):
             convert_data = []
             if extra:
@@ -72,7 +76,7 @@ class Serializer(object):
             return convert_data
         elif isinstance(data, models.Model):
             obj_dict = {}
-            concrete_model = data._meta.concrete_model
+            concrete_model = data._meta.concrete_model  # concrete(实在的/具体的)
             for field in concrete_model._meta.local_fields:
                 # 检查 field 是否存在 rel 这个属性，为'AutoField' object has no attribute 'rel'错误填坑
                 if hasattr(field, 'rel'):
@@ -116,6 +120,9 @@ class Serializer(object):
             return data.url if data.url else data.path
         elif isinstance(data, Decimal):
             return float(data)
+        # 加入UUID序列化支持
+        elif isinstance(data, uuid.UUID):
+            return str(data)
         elif isinstance(data, dict):
             obj_dict = {}
             if self._dict_check:
